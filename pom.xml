@@ -24,11 +24,18 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
-        
+
         <!-- Quartz Scheduler Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-quartz</artifactId>
+        </dependency>
+
+        <!-- Spring Web (For Embedded UI and Jackson) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- JDBC Starter for Quartz persistence -->
@@ -59,4 +66,11 @@
             </plugin>
         </plugins>
     </build>
+
+    <distributionManagement>
+        <repository>
+            <id>local-repo</id>
+            <url>file://${user.home}/.m2/repository</url>
+        </repository>
+    </distributionManagement>
 </project>

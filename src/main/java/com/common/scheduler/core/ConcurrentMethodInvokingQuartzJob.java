@@ -30,6 +30,9 @@ public class ConcurrentMethodInvokingQuartzJob extends QuartzJobBean {
         String beanName = jobDataMap.getString(TARGET_BEAN_NAME);
         String methodName = jobDataMap.getString(TARGET_METHOD_NAME);
 
+        String status = "SUCCESS";
+        JobExecutionException executionException = null;
+
         try {
             Object bean = applicationContext.getBean(beanName);
             Method method = ReflectionUtils.findMethod(bean.getClass(), methodName);
@@ -41,7 +44,37 @@ public class ConcurrentMethodInvokingQuartzJob extends QuartzJobBean {
                 throw new JobExecutionException("Method " + methodName + " not found on bean " + beanName);
             }
         } catch (Exception e) {
-            throw new JobExecutionException("Failed to invoke scheduled method", e);
+            status = "FAILED";
+            executionException = new JobExecutionException("Failed to invoke scheduled method", e);
+            throw executionException;
+        } finally {
+            updateExecutionMetrics(context, status);
+        }
+    }
+
+    private void updateExecutionMetrics(JobExecutionContext context, String status) {
+        try {
+            String jobName = context.getJobDetail().getKey().getName();
+            String jobGroup = context.getTrigger().getKey().getGroup();
+
+            com.common.scheduler.repository.JobEntityRepository jobRepo = applicationContext.getBean(com.common.scheduler.repository.JobEntityRepository.class);
+            com.common.scheduler.repository.TriggerEntityRepository triggerRepo = applicationContext.getBean(com.common.scheduler.repository.TriggerEntityRepository.class);
+
+            jobRepo.findByJobName(jobName).ifPresent(job -> {
+                triggerRepo.findByJobAndJobGroup(job, jobGroup).ifPresent(trigger -> {
+                    if (context.getFireTime() != null) {
+                        trigger.setLastExecutionDate(context.getFireTime().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime());
+                    }
+                    if (context.getNextFireTime() != null) {
+                        trigger.setNextExecutionDate(context.getNextFireTime().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime());
+                    }
+                    trigger.setLastExecutionStatus(status);
+                    triggerRepo.save(trigger);
+                });
+            });
+        } catch (Exception e) {
+            // Log silently, we don't want metric update failures to crash the job itself
+            e.printStackTrace();
         }
     }
 }

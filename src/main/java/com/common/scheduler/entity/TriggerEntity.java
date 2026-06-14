@@ -1,6 +1,8 @@
 package com.common.scheduler.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "custom_trigger_registry", uniqueConstraints = {
@@ -14,6 +16,7 @@ public class TriggerEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_id", nullable = false)
+    @JsonIgnore
     private JobEntity job;
 
     @Column(nullable = false)
@@ -24,6 +27,15 @@ public class TriggerEntity {
 
     @Column(nullable = false)
     private String timezone;
+
+    @Column(name = "last_execution_date")
+    private LocalDateTime lastExecutionDate;
+
+    @Column(name = "next_execution_date")
+    private LocalDateTime nextExecutionDate;
+
+    @Column(name = "last_execution_status")
+    private String lastExecutionStatus;
 
     public Long getId() {
         return id;
@@ -63,5 +75,29 @@ public class TriggerEntity {
 
     public void setTimezone(String timezone) {
         this.timezone = timezone;
+    }
+
+    public LocalDateTime getLastExecutionDate() {
+        return lastExecutionDate;
+    }
+
+    public void setLastExecutionDate(LocalDateTime lastExecutionDate) {
+        this.lastExecutionDate = lastExecutionDate;
+    }
+
+    public LocalDateTime getNextExecutionDate() {
+        return nextExecutionDate;
+    }
+
+    public void setNextExecutionDate(LocalDateTime nextExecutionDate) {
+        this.nextExecutionDate = nextExecutionDate;
+    }
+
+    public String getLastExecutionStatus() {
+        return lastExecutionStatus;
+    }
+
+    public void setLastExecutionStatus(String lastExecutionStatus) {
+        this.lastExecutionStatus = lastExecutionStatus;
     }
 }

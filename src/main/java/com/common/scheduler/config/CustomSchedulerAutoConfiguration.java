@@ -37,4 +37,11 @@ public class CustomSchedulerAutoConfiguration {
     public DatabaseSchedulerSyncService databaseSchedulerSyncService(JobEntityRepository jobEntityRepository, Scheduler scheduler) {
         return new DatabaseSchedulerSyncService(jobEntityRepository, scheduler);
     }
+
+    @Bean
+    public com.common.scheduler.controller.SchedulerUIController schedulerUIController(
+            JobEntityRepository jobEntityRepository, 
+            DatabaseSchedulerSyncService databaseSchedulerSyncService) {
+        return new com.common.scheduler.controller.SchedulerUIController(jobEntityRepository, databaseSchedulerSyncService);
+    }
 }

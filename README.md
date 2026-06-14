@@ -109,3 +109,56 @@ UPDATE custom_job_registry SET status = 'ACTIVE' WHERE job_name IN ('scheduler1'
 ```
 
 Then, trigger the sync process (by restarting your app, or by manually calling `databaseSchedulerSyncService.syncDatabaseJobsWithQuartz()`). The Quartz engine will take over and automatically execute your tasks exactly across the 9 defined timezones!
+
+### 6. Configurable Embedded UI Dashboard
+This library ships with a zero-dependency, modern HTML dashboard. It allows you to monitor all active jobs, view execution metrics (like last execution time and status), and toggle jobs directly without restarting your app!
+
+To enable it, simply add this property to your `application.properties`:
+```properties
+custom.scheduler.ui.enabled=true
+```
+
+Once enabled, visit `http://localhost:8080/custom-scheduler/ui` to see the dashboard.
+
+The dashboard uses a REST API (`/custom-scheduler/api/jobs`) that returns a comprehensive JSON structure of your execution history. Here is an example of what it returns:
+
+```json
+[
+    {
+        "id": 3,
+        "jobName": "scheduler3",
+        "beanName": "sampleJobService",
+        "methodName": "scheduler3",
+        "status": "ACTIVE",
+        "parallelism": false,
+        "triggers": [
+            {
+                "id": 13,
+                "jobGroup": "G1",
+                "cronExpression": "0 * * * * ?",
+                "timezone": "Asia/Kolkata",
+                "lastExecutionDate": "2026-06-14T20:24:00.021",
+                "nextExecutionDate": "2026-06-14T20:25:00",
+                "lastExecutionStatus": "SUCCESS"
+            },
+            {
+                "id": 18,
+                "jobGroup": "UK_SHIFT",
+                "cronExpression": "0 * * * * ?",
+                "timezone": "Europe/London",
+                "lastExecutionDate": "2026-06-14T20:24:00.097",
+                "nextExecutionDate": "2026-06-14T20:25:00",
+                "lastExecutionStatus": "SUCCESS"
+            }
+        ]
+    }
+]
+```
+*(Response truncated for brevity, but includes all jobs and their respective groups/timezones).*
+
+### 7. Sample Project Reference
+A complete, runnable sample Spring Boot project using this common jar is available.
+To link or clone it, add the following remote:
+```bash
+git remote add origin https://github.com/avinashsinghrana/sample-project-for-custom-scheduler.git
+```

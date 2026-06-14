@@ -4,6 +4,7 @@ com/common/scheduler/config/CustomSchedulerAutoConfiguration.class
 com/common/scheduler/annotation/EnableCustomScheduler.class
 com/common/scheduler/repository/JobEntityRepository.class
 com/common/scheduler/annotation/CustomScheduled.class
+com/common/scheduler/controller/SchedulerUIHtml.class
 com/common/scheduler/config/CustomSchedulerProperties$JobGroupConfig.class
 com/common/scheduler/entity/JobEntity.class
 com/common/scheduler/core/ConcurrentMethodInvokingQuartzJob.class
@@ -11,5 +12,6 @@ com/common/scheduler/core/NonConcurrentMethodInvokingQuartzJob.class
 com/common/scheduler/repository/TriggerEntityRepository.class
 com/common/scheduler/service/DatabaseSchedulerSyncService.class
 com/common/scheduler/entity/TriggerEntity.class
+com/common/scheduler/controller/SchedulerUIController.class
 com/common/scheduler/core/CustomScheduledBeanPostProcessor.class
 com/common/scheduler/config/CustomSchedulerProperties.class

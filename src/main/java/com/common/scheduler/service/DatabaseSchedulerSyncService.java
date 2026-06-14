@@ -34,7 +34,7 @@ public class DatabaseSchedulerSyncService {
      * It can also be called manually to force a sync if database statuses are updated.
      */
     @EventListener(ApplicationReadyEvent.class)
-    @Transactional(readOnly = true)
+    @Transactional
     public void syncDatabaseJobsWithQuartz() {
         log.info("Starting synchronization between Database Registry and Quartz Scheduler...");
 
