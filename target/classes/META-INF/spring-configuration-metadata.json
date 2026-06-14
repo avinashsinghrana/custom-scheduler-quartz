@@ -1,0 +1,18 @@
+{
+  "groups": [
+    {
+      "name": "custom.scheduler",
+      "type": "com.common.scheduler.config.CustomSchedulerProperties",
+      "sourceType": "com.common.scheduler.config.CustomSchedulerProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "custom.scheduler.groups",
+      "type": "java.util.Map<java.lang.String,com.common.scheduler.config.CustomSchedulerProperties$JobGroupConfig>",
+      "description": "Map of Job Group configurations. The key is the group name (e.g., country code).",
+      "sourceType": "com.common.scheduler.config.CustomSchedulerProperties"
+    }
+  ],
+  "hints": []
+}
