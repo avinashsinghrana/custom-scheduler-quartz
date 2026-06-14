@@ -1,29 +1,21 @@
 # Scheduler Common Jar
 
-A common Spring Boot starter library designed to easily provide multi-tenant and multi-region Quartz scheduling capabilities to any Spring Boot application. 
+A common Spring Boot starter library designed to provide multi-tenant and multi-region Quartz scheduling capabilities powered by a Database Registry Workflow.
 
-This library abstracts away complex Quartz scheduling logic, allowing you to seamlessly register method-level jobs and schedule them across multiple timezones and regions concurrently.
+This library allows you to securely manage Jobs and Triggers entirely via your database, and schedule the same task across multiple timezones or crons flawlessly!
 
 ## Key Features
-
-1. **`@EnableCustomScheduler` Annotation**: Add this to your Spring Boot main application class. It automatically initializes the Quartz components, forces it to safely persist schedules using your default `DataSource`, and prevents duplicate schedule creation across cluster nodes.
-2. **`@CustomScheduled` Annotation**: A method-level annotation used to flag any bean method as a scheduled task.
-3. **Multi-Region / Multi-Tenant Scaling**: Seamlessly bind single methods to trigger concurrently across multiple country timezones.
-4. **Zero-Configuration Defaults**: If no custom regions are defined, it safely falls back to standard single-trigger scheduling.
-5. **Database Agnostic**: Inherits `spring.quartz.job-store-type=jdbc` out of the box, utilizing your host Spring Boot application's `DataSource` to automatically construct necessary standard Quartz tables (`QRTZ_JOB_DETAILS`, `QRTZ_TRIGGERS`, etc.).
+1. **Database Registry Workflow**: Jobs are inserted into a custom JPA registry (`custom_job_registry`) and wait in an `INACTIVE` state. Once marked `ACTIVE`, they are dynamically pushed to the Quartz Engine!
+2. **Selective Job Grouping**: You can map a specific number of region/tenant groups to specific scheduled methods dynamically!
+3. **Parallelism Control**: Enforce strict one-at-a-time execution or allow concurrent overlapping executions seamlessly.
+4. **Zero-Configuration Defaults**: Inherits your Spring Boot `DataSource` directly and auto-creates all necessary Quartz tables (`spring.quartz.jdbc.initialize-schema=always`).
 
 ---
 
-## 🚀 Complete Workflow & Integration Guide
+## 🚀 Complete Integration Guide
 
-### 1. Build and Install the Library
-First, build the library from the source code and install it in your local `.m2` maven repository.
-```bash
-mvn clean install
-```
-
-### 2. Include the Dependency
-In the target Spring Boot Application where you wish to run scheduled tasks, include the dependency in your `pom.xml`:
+### 1. Include the Dependency
+After building the project with `mvn clean install`, add this to your target Spring Boot application:
 ```xml
 <dependency>
     <groupId>com.common</groupId>
@@ -32,9 +24,8 @@ In the target Spring Boot Application where you wish to run scheduled tasks, inc
 </dependency>
 ```
 
-### 3. Enable the Scheduler
-Open your main Application class and add the `@EnableCustomScheduler` annotation. This tells the library to intercept beans, prepare the database, and inject the core Engine.
-
+### 2. Enable the Scheduler
+Add `@EnableCustomScheduler` to your main class:
 ```java
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -49,70 +40,72 @@ public class MySaaSApplication {
 }
 ```
 
-### 4. Provide Database Configuration
-Quartz needs a database to store its triggers. Because this library inherits your Spring application's data source, simply provide standard database details in your `application.properties`:
-
+### 3. Database Configuration
+Provide standard database details in `application.properties`:
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/mydb
 spring.datasource.username=root
 spring.datasource.password=secret
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 ```
-*Note: Because our library automatically sets `spring.quartz.jdbc.initialize-schema=always`, Quartz will automatically generate the required database tables upon the first application startup.*
 
-### 5. Schedule a Target Method
-Use the `@CustomScheduled` annotation on any method within a standard Spring Bean (e.g. `@Service`, `@Component`).
+### 4. Advanced Group Targeting (3 Groups vs 6 Groups)
+You can define as many groups as you want globally. You can change their timezones or override their crons!
 
-The `cron` supplied here acts as the **global default**.
+In your `application.properties`:
+```properties
+# Group 1-3 (e.g. Asia/Europe)
+custom.scheduler.groups.G1.timezone=Asia/Kolkata
+custom.scheduler.groups.G2.timezone=Europe/Berlin
+custom.scheduler.groups.G3.timezone=Asia/Tokyo
+
+# Group 4-6 (e.g. Americas)
+custom.scheduler.groups.G4.timezone=America/New_York
+custom.scheduler.groups.G5.timezone=America/Los_Angeles
+custom.scheduler.groups.G6.timezone=America/Sao_Paulo
+```
+
+Then, use the `allowedGroups` parameter to map **3 groups to Scheduler 1** and **6 groups to Scheduler 2**:
 
 ```java
 import org.springframework.stereotype.Service;
 import com.common.scheduler.annotation.CustomScheduled;
 
 @Service
-public class BillingService {
+public class TaskService {
 
-    // By default, this will run at 12:00 PM (Noon) every day.
-    @CustomScheduled(cron = "0 0 12 * * ?", jobName = "dailyBilling")
-    public void executeDailyBilling() {
-        System.out.println("Executing daily billing cycle for region...");
+    // --- SCHEDULER 1 ---
+    // This will generate exactly 3 triggers (for G1, G2, G3)
+    @CustomScheduled(
+        jobName = "scheduler1",
+        cron = "0 0 12 * * ?", // Runs at 12 PM
+        parallelism = false,   // Strictly runs one-at-a-time across cluster
+        allowedGroups = {"G1", "G2", "G3"}
+    )
+    public void scheduler1() {
+        System.out.println("Scheduler 1 executing...");
+    }
+
+    // --- SCHEDULER 2 ---
+    // This will generate exactly 6 triggers (for G1 through G6)
+    @CustomScheduled(
+        jobName = "scheduler2",
+        cron = "0 0 9 * * ?", // Runs at 9 AM
+        parallelism = true,   // Can run concurrently
+        allowedGroups = {"G1", "G2", "G3", "G4", "G5", "G6"}
+    )
+    public void scheduler2() {
+        System.out.println("Scheduler 2 executing...");
     }
 }
 ```
 
-### 6. Configure Timezones and Multi-Region Groups (Optional)
-If your SaaS operates across different countries, you can automatically schedule the single `executeDailyBilling()` method to run relative to the timezone of each country. 
+### 5. Activating the Jobs
+When your application starts, you'll see your `custom_job_registry` and `custom_trigger_registry` tables automatically populated with these jobs.
 
-Add the `custom.scheduler.groups` properties to your host application's `application.properties`:
-
-```properties
-# ---------------------------------------------------------
-# Tenant 1: India 
-# (Fires at 12:00 PM Indian Standard Time)
-# ---------------------------------------------------------
-custom.scheduler.groups.IN.timezone=Asia/Kolkata
-
-# ---------------------------------------------------------
-# Tenant 2: USA - New York 
-# (Fires at 12:00 PM Eastern Standard Time)
-# ---------------------------------------------------------
-custom.scheduler.groups.US.timezone=America/New_York
-
-# ---------------------------------------------------------
-# Tenant 3: Europe - Berlin
-# (We OVERRIDE the cron to fire at 2:00 PM Berlin Time instead)
-# ---------------------------------------------------------
-custom.scheduler.groups.EU.timezone=Europe/Berlin
-custom.scheduler.groups.EU.cron=0 0 14 * * ?
+Because they are inserted as `INACTIVE`, they won't run yet. Activate them via SQL or your backend panel:
+```sql
+UPDATE custom_job_registry SET status = 'ACTIVE' WHERE job_name IN ('scheduler1', 'scheduler2');
 ```
 
-**How It Works:**
-When the Spring Application starts up, the engine observes 3 Job Groups defined in your properties. It will dynamically wrap your `BillingService.executeDailyBilling()` method inside 3 separate and persistent Quartz Jobs. Each Trigger will strictly observe its configured TimeZone independently.
-
-*If no `custom.scheduler.groups` are defined, the library defaults to creating exactly 1 trigger utilizing the system's default TimeZone.*
-
----
-
-## Technical Details 
-- **Underlying Scheduler:** [Quartz Scheduler](http://www.quartz-scheduler.org/) via `spring-boot-starter-quartz`.
-- **Reflection Access:** The library utilizes a secure custom `QuartzJobBean` implementation (`MethodInvokingQuartzJob.java`) which securely obtains your target Spring Bean by its Bean Name directly from the `ApplicationContext` and triggers it dynamically. This avoids direct serialization limits with Quartz.
+Then, trigger the sync process (by restarting your app, or by manually calling `databaseSchedulerSyncService.syncDatabaseJobsWithQuartz()`). The Quartz engine will take over and automatically execute your tasks exactly across the 9 defined timezones!

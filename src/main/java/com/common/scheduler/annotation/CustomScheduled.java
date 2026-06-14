@@ -24,4 +24,16 @@ public @interface CustomScheduled {
      * Optional group of the job.
      */
     String jobGroup() default "DEFAULT_GROUP";
+
+    /**
+     * Optional list of specific group keys from application.properties to map to this job.
+     * If empty, triggers will be generated for ALL globally defined groups.
+     */
+    String[] allowedGroups() default {};
+
+    /**
+     * If true, the job can run concurrently across pods or on the same pod.
+     * If false (default), strict one-at-a-time execution is enforced.
+     */
+    boolean parallelism() default false;
 }

@@ -11,15 +11,16 @@ import java.lang.reflect.Method;
 
 /**
  * Generic Quartz Job that invokes a specific method on a target Spring Bean.
+ * Allows concurrent executions.
  */
-public class MethodInvokingQuartzJob extends QuartzJobBean {
+public class ConcurrentMethodInvokingQuartzJob extends QuartzJobBean {
 
     public static final String TARGET_BEAN_NAME = "targetBeanName";
     public static final String TARGET_METHOD_NAME = "targetMethodName";
 
     private final ApplicationContext applicationContext;
 
-    public MethodInvokingQuartzJob(ApplicationContext applicationContext) {
+    public ConcurrentMethodInvokingQuartzJob(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
     }
 
